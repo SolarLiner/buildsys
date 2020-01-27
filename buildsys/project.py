@@ -1,14 +1,17 @@
-from enum import Enum, enum, auto
+from enum import Enum, auto
 from pathlib import Path
 from marshmallow import fields
 from marshmallow.schema import Schema
 from typing import List, Iterable
 
 
-@enum
 class ProjectType(Enum):
     Executable = auto()
-    Library = auto()
+    SharedLibrary = auto()
+    StaticLibrary = auto()
+
+    def needs_pic(self):
+        return self == ProjectType.SharedLibrary or self == ProjectType.StaticLibrary
 
 
 class ProjectSchema(Schema):
@@ -21,7 +24,7 @@ class ProjectSchema(Schema):
 class Project:
     name: str
     type: ProjectType
-    dependencies: List[Project]
+    dependencies: List["Project"]
     sources: List[Path]
 
     def __init__(self, name: str, type: ProjectType = ProjectType.Executable):
@@ -30,10 +33,10 @@ class Project:
         self.dependencies = list()
         self.sources = list()
 
-	def add_sources(self, sources: Iterable[Path]):
-		for src in sources:
-			if src.exists() and src.is_file():
-				self.sources.append(src)
+    def add_sources(self, sources: Iterable[Path]):
+        for src in sources:
+            # if src.exists() and src.is_file():
+            self.sources.append(src.resolve())
 
-	def add_dependency(self, project: Project):
-		self.dependencies.append(project)
+    def add_dependency(self, project: "Project"):
+        self.dependencies.append(project)
