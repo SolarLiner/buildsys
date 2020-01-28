@@ -1,5 +1,8 @@
+import os
 import shlex
+import subprocess
 from pathlib import Path
+from shutil import which
 from typing import Iterable, TextIO, List, Union
 
 from . import __version__
@@ -100,6 +103,11 @@ class MakefileGenerator(BaseGenerator):
     def __init__(self, compiler: BaseCompiler):
         super().__init__(compiler)
         self.rules = list()
+        self.variables = list()
+        _ccbin = os.getenv("CC", "gcc")
+        self.bin = which(_ccbin)
+        if self.bin is None:
+            raise IOError(f"{_ccbin}: No executable found")
 
     def generate_project(self, project: Project):
         super().generate_project(project)
@@ -107,22 +115,14 @@ class MakefileGenerator(BaseGenerator):
             out_dir = self.build_dir / (src.parent.relative_to(self.source_dir))
             if not out_dir.exists():
                 out_dir.mkdir(parents=True)
-
         rule_all = self.create_rule("all", project.name)
+        objs = [self.get_dependencies(src) for src in project.sources]
         rule_project = self.create_rule(
-            project.name,
-            *[
-                (s.relative_to(self.source_dir)).with_suffix(".o")
-                for s in project.sources
-            ],
+            project.name, *[obj.relative_to(self.build_dir) for obj in objs]
         )
-        rule_project.add_code(["gcc $^ -o $@"])
-        rule_o = self.create_rule(
-            "%.o", f"{relative_recursive(self.source_dir, self.build_dir)}/%.c"
-        )
-        rule_o.add_code(["gcc -c $^ -o $@"])
-
+        rule_project.add_code([f"{self.bin} $^ -o $@"])
         self.create_rule(".PHONY", rule_all)
+
         self.render_project()
 
     def render_project(self):
@@ -141,3 +141,22 @@ class MakefileGenerator(BaseGenerator):
         )
         self.rules.append(rule)
         return rule
+
+    def add_variable(self, name: str, contents: str):
+        self.variables.append((name, contents))
+
+    def get_dependencies(self, src: Path):
+        relative = relative_recursive(src, self.build_dir)
+        prog = subprocess.run(
+            [self.bin, "-MM", relative],
+            cwd=self.build_dir,
+            stdout=subprocess.PIPE,
+            encoding="utf-8",
+            check=True,
+        )
+        name, dependencies = tuple(s.strip() for s in prog.stdout.split(":", 2))
+        obj = src.relative_to(self.source_dir).with_name(name)
+        rule = self.create_rule(str(obj), dependencies)
+        rule.add_code([f"{self.bin} -c $< -o $@"])
+
+        return self.build_dir / obj

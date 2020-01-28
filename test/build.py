@@ -4,7 +4,7 @@ from pathlib import Path
 from typing import List
 
 from buildsys.compiler import GccCompiler
-from buildsys.generator import RawCommandsGenerator, MakefileGenerator
+from buildsys.generator import MakefileGenerator
 from buildsys.project import ProjectType, Project
 
 CURRENT_DIR = Path(__file__).parent

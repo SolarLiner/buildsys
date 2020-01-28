@@ -1,8 +1,9 @@
 from enum import Enum, auto
 from pathlib import Path
+from typing import List, Iterable
+
 from marshmallow import fields
 from marshmallow.schema import Schema
-from typing import List, Iterable
 
 
 class ProjectType(Enum):
