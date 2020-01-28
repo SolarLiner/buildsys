@@ -4,7 +4,8 @@ from pathlib import Path
 from typing import List
 
 from buildsys.compiler import GccCompiler
-from buildsys.generator import MakefileGenerator
+from buildsys.generators.makefile import MakefileGenerator
+from buildsys.generators.ninja import NinjaGenerator
 from buildsys.project import ProjectType, Project
 
 CURRENT_DIR = Path(__file__).parent
@@ -21,7 +22,7 @@ def main(args: List[str]):
     project = Project("test", ProjectType.Executable)
     project.add_sources(CURRENT_DIR / Path(s) for s in ["src/main.c", "src/lib.c"])
     compiler = GccCompiler(args.source_dir, args.build_dir, project.type)
-    generator = MakefileGenerator(compiler)
+    generator = NinjaGenerator(compiler)
     generator.generate_project(project)
 
 
