@@ -1,15 +1,14 @@
-from enum import Enum, auto
+from enum import Enum
 from pathlib import Path
 from typing import List, Iterable
 
-from marshmallow import fields
+from marshmallow import fields, validates, ValidationError
 from marshmallow.schema import Schema
 
 
 class ProjectType(Enum):
-    Executable = auto()
-    SharedLibrary = auto()
-    StaticLibrary = auto()
+    Executable = "executable"
+    Library = "library"
 
     def needs_pic(self):
         return self == ProjectType.SharedLibrary or self == ProjectType.StaticLibrary
@@ -17,9 +16,16 @@ class ProjectType(Enum):
 
 class ProjectSchema(Schema):
     name = fields.Str()
-    type = fields.Str()
+    type = fields.Str(default="executable")
     dependencies = fields.List(fields.Str())
     sources = fields.List(fields.Str())
+
+    @validates("type")
+    def validate_type(self, value: str):
+        try:
+            ProjectType(value)
+        except ValueError:
+            raise ValidationError("Type must be one of 'executable' or 'library'.")
 
 
 class Project:
@@ -33,6 +39,9 @@ class Project:
         self.type = type
         self.dependencies = list()
         self.sources = list()
+
+    def __str__(self):
+        return f"{self.__class__.__name__}({self.__dict__})"
 
     def add_sources(self, sources: Iterable[Path]):
         for src in sources:

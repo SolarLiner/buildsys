@@ -1,0 +1,7 @@
+name: test
+type: executable
+sources:
+  - src/main.c
+  - src/lib.c
+dependencies:
+  - foo
