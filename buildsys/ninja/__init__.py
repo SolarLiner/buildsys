@@ -2,11 +2,12 @@ import os
 from pathlib import Path
 from shutil import which
 
-from buildsys.compiler import BaseCompiler
-from buildsys.util import relative_recursive
 from buildsys.generators import BaseGenerator
-from buildsys.generators.ninja.syntax import Writer
+
+from buildsys.compiler import BaseCompiler
+from buildsys.ninja.syntax import Writer
 from buildsys.project import Project
+from buildsys.util import relative_recursive
 
 
 class NinjaGenerator(BaseGenerator):
